@@ -23,6 +23,15 @@ export const ResultsTable: React.FC<Props> = ({ wayPoints, totalDistance, totalT
         return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
     };
 
+    // Format pace as min:sec /km
+    const formatPace = (distanceKm: number, timeSeconds: number): string => {
+        if (distanceKm <= 0 || timeSeconds <= 0) return '-';
+        const paceMinutes = (timeSeconds / 60) / distanceKm;
+        const mins = Math.floor(paceMinutes);
+        const secs = Math.round((paceMinutes - mins) * 60);
+        return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    };
+
     // Check for aid at START (distance ~= 0)
     const startThreshold = 100; // 100m threshold
     const hasAidAtStart = sortedWpts.some(wp => wp.distanceFromStart < startThreshold);
@@ -32,15 +41,38 @@ export const ResultsTable: React.FC<Props> = ({ wayPoints, totalDistance, totalT
     const hasAidAtGoal = sortedWpts.some(wp => Math.abs(wp.distanceFromStart - totalDistance) < goalThreshold);
 
     // Calculate aid dwell time for a waypoint index
-    // If first waypoint is at start, its dwell time is 0 (no waiting at start)
+    // Aid time is added AFTER leaving the aid, so it affects the segment to the NEXT waypoint
+    // First waypoint at start: no aid time added yet
+    // Subsequent waypoints: add aid times from all previous aids (except start)
+    // Last waypoint (goal): don't add its own aid time
     const getAidDwellCount = (index: number) => {
         // If first waypoint is at start position, it doesn't count for aid time
         if (sortedWpts.length > 0 && sortedWpts[0].distanceFromStart < startThreshold) {
-            // First waypoint is at start, so aid count is index (not index itself)
-            return index; // index 0 = 0 aids, index 1 = 1 aid (from index 0 is skipped because it's at start)
+            // First waypoint is at start, so aid count is (index - 1) because:
+            // - index 0 (start): 0 aids
+            // - index 1: 0 aids (no aid time added because we just left start aid)
+            // - index 2: 1 aid (start aid's time is added to segment 1->2)
+            // Actually, the aid time at index N is added to segment N -> N+1
+            // So at arrival to index N, we have accumulated aid times from aids 0..N-1 (excluding start)
+            return Math.max(0, index - 1);
         }
+        // No start aid, so all aids count
         return index;
     };
+
+    // Calculate total aid time (excluding start and excluding last waypoint if it's at goal)
+    const isLastAtGoal = sortedWpts.length > 0 &&
+        Math.abs(sortedWpts[sortedWpts.length - 1].distanceFromStart - totalDistance) < goalThreshold;
+    let totalAidCount = sortedWpts.length;
+    if (sortedWpts.length > 0 && sortedWpts[0].distanceFromStart < startThreshold) {
+        totalAidCount--; // exclude start
+    }
+    if (isLastAtGoal) {
+        totalAidCount--; // exclude goal (no dwell time at goal)
+    }
+    totalAidCount = Math.max(0, totalAidCount);
+    const totalAidTimeSeconds = totalAidCount * strategy.aidStationTime * 60;
+    const totalTimeWithAid = totalTime + totalAidTimeSeconds;
 
     return (
         <div style={{ marginTop: '20px', overflowX: 'auto' }}>
@@ -49,10 +81,11 @@ export const ResultsTable: React.FC<Props> = ({ wayPoints, totalDistance, totalT
                 <thead>
                     <tr style={{ background: '#eee' }}>
                         <th style={{ padding: '8px', border: '1px solid #ddd' }}>ポイント名</th>
-                        <th style={{ padding: '8px', border: '1px solid #ddd' }}>距離 (km)</th>
-                        <th style={{ padding: '8px', border: '1px solid #ddd' }}>区間距離 (km)</th>
-                        <th style={{ padding: '8px', border: '1px solid #ddd' }}>到着時刻</th>
-                        <th style={{ padding: '8px', border: '1px solid #ddd' }}>経過時間</th>
+                        <th style={{ padding: '8px', border: '1px solid #ddd', width: '12%' }}>距離 (km)</th>
+                        <th style={{ padding: '8px', border: '1px solid #ddd', width: '12%' }}>区間距離<br />(km)</th>
+                        <th style={{ padding: '8px', border: '1px solid #ddd', width: '12%' }}>到着時刻</th>
+                        <th style={{ padding: '8px', border: '1px solid #ddd', width: '12%' }}>経過時間</th>
+                        <th style={{ padding: '8px', border: '1px solid #ddd', width: '12%' }}>区間ペース</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -60,16 +93,19 @@ export const ResultsTable: React.FC<Props> = ({ wayPoints, totalDistance, totalT
                     {!hasAidAtStart && (
                         <tr>
                             <td style={{ padding: '8px', border: '1px solid #ddd' }}>START</td>
-                            <td style={{ padding: '8px', border: '1px solid #ddd' }}>0.0</td>
-                            <td style={{ padding: '8px', border: '1px solid #ddd' }}>-</td>
-                            <td style={{ padding: '8px', border: '1px solid #ddd' }}>{strategy.startTime}:00</td>
-                            <td style={{ padding: '8px', border: '1px solid #ddd' }}>00:00:00</td>
+                            <td style={{ padding: '8px', border: '1px solid #ddd', textAlign: 'center' }}>0.0</td>
+                            <td style={{ padding: '8px', border: '1px solid #ddd', textAlign: 'center' }}>-</td>
+                            <td style={{ padding: '8px', border: '1px solid #ddd', textAlign: 'center' }}>{strategy.startTime}:00</td>
+                            <td style={{ padding: '8px', border: '1px solid #ddd', textAlign: 'center' }}>00:00:00</td>
+                            <td style={{ padding: '8px', border: '1px solid #ddd', textAlign: 'center' }}>-</td>
                         </tr>
                     )}
 
                     {sortedWpts.map((wp, i) => {
                         const prevDist = i === 0 ? 0 : sortedWpts[i - 1].distanceFromStart;
+                        const prevTime = i === 0 ? 0 : (sortedWpts[i - 1].predictedTime || 0);
                         const sectionDist = (wp.distanceFromStart - prevDist) / 1000;
+                        const sectionTime = (wp.predictedTime || 0) - prevTime;
                         const arrivalSeconds = wp.predictedTime || 0;
                         const aidTimeSeconds = strategy.aidStationTime * 60;
 
@@ -81,13 +117,17 @@ export const ResultsTable: React.FC<Props> = ({ wayPoints, totalDistance, totalT
                         const isAtStart = wp.distanceFromStart < startThreshold;
                         const displayName = isAtStart ? `${wp.name} (START)` : wp.name;
 
+                        // Calculate section pace (excluding aid time for pacing calculation)
+                        const sectionPace = isAtStart ? '-' : formatPace(sectionDist, sectionTime);
+
                         return (
                             <tr key={i}>
                                 <td style={{ padding: '8px', border: '1px solid #ddd' }}>{displayName}</td>
-                                <td style={{ padding: '8px', border: '1px solid #ddd' }}>{(wp.distanceFromStart / 1000).toFixed(1)}</td>
-                                <td style={{ padding: '8px', border: '1px solid #ddd' }}>{isAtStart ? '-' : sectionDist.toFixed(1)}</td>
-                                <td style={{ padding: '8px', border: '1px solid #ddd' }}>{getClockTime(arrivalWithPrevAid)}</td>
-                                <td style={{ padding: '8px', border: '1px solid #ddd' }}>{formatTime(arrivalWithPrevAid)}{isAtStart ? '' : ' (到着)'}</td>
+                                <td style={{ padding: '8px', border: '1px solid #ddd', textAlign: 'center' }}>{(wp.distanceFromStart / 1000).toFixed(1)}</td>
+                                <td style={{ padding: '8px', border: '1px solid #ddd', textAlign: 'center' }}>{isAtStart ? '-' : sectionDist.toFixed(1)}</td>
+                                <td style={{ padding: '8px', border: '1px solid #ddd', textAlign: 'center' }}>{getClockTime(arrivalWithPrevAid)}</td>
+                                <td style={{ padding: '8px', border: '1px solid #ddd', textAlign: 'center' }}>{formatTime(arrivalWithPrevAid)}</td>
+                                <td style={{ padding: '8px', border: '1px solid #ddd', textAlign: 'center' }}>{sectionPace}</td>
                             </tr>
                         );
                     })}
@@ -96,15 +136,26 @@ export const ResultsTable: React.FC<Props> = ({ wayPoints, totalDistance, totalT
                     {!hasAidAtGoal && (
                         <tr>
                             <td style={{ padding: '8px', border: '1px solid #ddd' }}>GOAL</td>
-                            <td style={{ padding: '8px', border: '1px solid #ddd' }}>{(totalDistance / 1000).toFixed(1)}</td>
-                            <td style={{ padding: '8px', border: '1px solid #ddd' }}>-</td>
-                            <td style={{ padding: '8px', border: '1px solid #ddd' }}>{getClockTime(totalTime + (sortedWpts.length * strategy.aidStationTime * 60))}</td>
-                            <td style={{ padding: '8px', border: '1px solid #ddd' }}>{formatTime(totalTime + (sortedWpts.length * strategy.aidStationTime * 60))}</td>
+                            <td style={{ padding: '8px', border: '1px solid #ddd', textAlign: 'center' }}>{(totalDistance / 1000).toFixed(1)}</td>
+                            <td style={{ padding: '8px', border: '1px solid #ddd', textAlign: 'center' }}>-</td>
+                            <td style={{ padding: '8px', border: '1px solid #ddd', textAlign: 'center' }}>{getClockTime(totalTimeWithAid)}</td>
+                            <td style={{ padding: '8px', border: '1px solid #ddd', textAlign: 'center' }}>{formatTime(totalTimeWithAid)}</td>
+                            <td style={{ padding: '8px', border: '1px solid #ddd', textAlign: 'center' }}>-</td>
                         </tr>
                     )}
+
+                    {/* Total row */}
+                    <tr style={{ background: '#f0f8ff', fontWeight: 'bold' }}>
+                        <td style={{ padding: '8px', border: '1px solid #ddd' }}>合計</td>
+                        <td style={{ padding: '8px', border: '1px solid #ddd', textAlign: 'center' }}>{(totalDistance / 1000).toFixed(1)}</td>
+                        <td style={{ padding: '8px', border: '1px solid #ddd', textAlign: 'center' }}>-</td>
+                        <td style={{ padding: '8px', border: '1px solid #ddd', textAlign: 'center' }}>-</td>
+                        <td style={{ padding: '8px', border: '1px solid #ddd', textAlign: 'center' }}>{formatTime(totalTimeWithAid)}</td>
+                        <td style={{ padding: '8px', border: '1px solid #ddd', textAlign: 'center' }}>{formatPace(totalDistance / 1000, totalTime)}</td>
+                    </tr>
                 </tbody>
             </table>
-            <p style={{ fontSize: '0.9em', color: '#666' }}>※エイド滞在時間({strategy.aidStationTime}分)を考慮しています。スタート地点のエイドでは滞在時間を加算しません。</p>
+            <p style={{ fontSize: '0.9em', color: '#666' }}>※エイド滞在時間({strategy.aidStationTime}分)は次の区間の所要時間に加算されます。スタート地点およびゴール地点のエイドでは滞在時間を加算しません。区間ペースはエイド滞在時間を除いた走行時間から計算しています。</p>
         </div>
     );
 };

@@ -24,6 +24,7 @@ export interface Strategy {
     descentPace: number; // min/km (downhill)
     aidStationTime: number; // minutes per aid station
     startTime: string; // HH:mm
+    paceDistribution: number; // % (100 = even pace, 80 = ends at 80% of base pace)
 }
 
 export interface CourseData {

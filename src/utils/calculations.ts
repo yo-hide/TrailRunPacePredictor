@@ -3,6 +3,16 @@ import type { TrackPoint, Strategy } from '../types';
 export const predictTime = (trackPoints: TrackPoint[], strategy: Strategy): TrackPoint[] => {
     let totalSeconds = 0;
 
+    // Get total distance for pace distribution calculation
+    const totalDistance = trackPoints.length > 0
+        ? trackPoints[trackPoints.length - 1].distanceFromStart
+        : 0;
+
+    // Pace distribution factor: 100% = even pace, 80% = ends at 80% speed
+    // Speed factor at distance d: 1 - (1 - paceDistribution/100) * (d / totalDistance)
+    // Pace factor (inverse of speed): 1 / speedFactor
+    const paceDistributionRatio = (strategy.paceDistribution || 100) / 100;
+
     const processedPoints = trackPoints.map((pt, i) => {
         if (i === 0) {
             return { ...pt, predictedTime: 0 };
@@ -18,18 +28,30 @@ export const predictTime = (trackPoints: TrackPoint[], strategy: Strategy): Trac
 
         const gradient = pt.gradient || 0;
 
-        let pace = strategy.basePace;
+        let basePace = strategy.basePace;
 
         // Choose pace based on gradient
         if (gradient >= strategy.climbThreshold) {
             // Uphill walking
-            pace = strategy.climbPace;
+            basePace = strategy.climbPace;
         } else if (gradient < -5 && strategy.descentPace) {
             // Significant downhill (optional optimization)
-            pace = strategy.descentPace;
+            basePace = strategy.descentPace;
         }
 
-        const segmentMinutes = distKm * pace;
+        // Apply pace distribution factor
+        // At this segment's midpoint distance, calculate speed factor
+        const midpointDistance = (pt.distanceFromStart + prev.distanceFromStart) / 2;
+        const progressRatio = totalDistance > 0 ? midpointDistance / totalDistance : 0;
+
+        // Speed decreases linearly from 1.0 to paceDistributionRatio
+        const speedFactor = 1 - (1 - paceDistributionRatio) * progressRatio;
+
+        // Pace is inverse of speed (slower speed = higher pace)
+        const paceFactor = speedFactor > 0 ? 1 / speedFactor : 1;
+        const adjustedPace = basePace * paceFactor;
+
+        const segmentMinutes = distKm * adjustedPace;
         const segmentSeconds = segmentMinutes * 60;
         totalSeconds += segmentSeconds;
 

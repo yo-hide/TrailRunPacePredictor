@@ -44,6 +44,10 @@ export const StrategyForm: React.FC<Props> = ({ strategy, onChange }) => {
                     エイド滞在時間 (1箇所あたり)
                     <input style={inputStyle} type="number" name="aidStationTime" value={strategy.aidStationTime} onChange={handleChange} step="1" /> 分
                 </label>
+                <label style={labelStyle}>
+                    ペース配分 (ゴール時の速度比率)
+                    <input style={inputStyle} type="number" name="paceDistribution" value={strategy.paceDistribution} onChange={handleChange} step="1" min="50" max="100" /> %
+                </label>
             </div>
         </div>
     );

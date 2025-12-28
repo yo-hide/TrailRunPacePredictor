@@ -15,7 +15,8 @@ const DEFAULT_STRATEGY: Strategy = {
   climbPace: 18.0, // 18 min/km (walking)
   descentPace: 8.0, // 8 min/km
   aidStationTime: 15, // 15 min
-  startTime: "07:00"
+  startTime: "07:00",
+  paceDistribution: 100 // 100% = even pace
 };
 
 function App() {
@@ -103,7 +104,7 @@ function App() {
 
             {resultData && (
               <>
-                <ElevationChart data={resultData.tracks} wayPoints={resultData.waypoints} />
+                <ElevationChart data={resultData.tracks} wayPoints={resultData.waypoints} strategy={strategy} />
                 <ResultsTable
                   wayPoints={resultData.waypoints}
                   totalDistance={courseData.totalDistance}
