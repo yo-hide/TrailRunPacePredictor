@@ -9,7 +9,8 @@ interface Props {
 export const StrategyForm: React.FC<Props> = ({ strategy, onChange }) => {
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;
-        onChange({ ...strategy, [name]: parseFloat(value) });
+        const newValue = name === 'startTime' ? value : parseFloat(value);
+        onChange({ ...strategy, [name]: newValue });
     };
 
     const inputStyle = { marginLeft: '10px', padding: '5px' };
