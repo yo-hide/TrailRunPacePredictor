@@ -10,11 +10,11 @@ import html2canvas from 'html2canvas'; // Import html2canvas
 import './App.css';
 
 const DEFAULT_STRATEGY: Strategy = {
-  basePace: 6.0, // 6 min/km
+  basePace: 9.0, // 9 min/km
   climbThreshold: 10, // 10%
-  climbPace: 12.0, // 12 min/km (walking)
-  descentPace: 5.5, // 5.5 min/km
-  aidStationTime: 5, // 5 min
+  climbPace: 18.0, // 18 min/km (walking)
+  descentPace: 8.0, // 8 min/km
+  aidStationTime: 15, // 15 min
   startTime: "07:00"
 };
 
