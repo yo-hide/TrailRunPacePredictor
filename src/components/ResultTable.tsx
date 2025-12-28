@@ -133,16 +133,24 @@ export const ResultsTable: React.FC<Props> = ({ wayPoints, totalDistance, totalT
                     })}
 
                     {/* Show GOAL row only if no aid at goal */}
-                    {!hasAidAtGoal && (
-                        <tr>
-                            <td style={{ padding: '8px', border: '1px solid #ddd' }}>GOAL</td>
-                            <td style={{ padding: '8px', border: '1px solid #ddd', textAlign: 'center' }}>{(totalDistance / 1000).toFixed(1)}</td>
-                            <td style={{ padding: '8px', border: '1px solid #ddd', textAlign: 'center' }}>-</td>
-                            <td style={{ padding: '8px', border: '1px solid #ddd', textAlign: 'center' }}>{getClockTime(totalTimeWithAid)}</td>
-                            <td style={{ padding: '8px', border: '1px solid #ddd', textAlign: 'center' }}>{formatTime(totalTimeWithAid)}</td>
-                            <td style={{ padding: '8px', border: '1px solid #ddd', textAlign: 'center' }}>-</td>
-                        </tr>
-                    )}
+                    {!hasAidAtGoal && (() => {
+                        // Calculate section from last waypoint to goal
+                        const lastWp = sortedWpts[sortedWpts.length - 1];
+                        const goalSectionDist = lastWp ? (totalDistance - lastWp.distanceFromStart) / 1000 : 0;
+                        const goalSectionTime = lastWp ? totalTime - (lastWp.predictedTime || 0) : 0;
+                        const goalSectionPace = formatPace(goalSectionDist, goalSectionTime);
+
+                        return (
+                            <tr>
+                                <td style={{ padding: '8px', border: '1px solid #ddd' }}>GOAL</td>
+                                <td style={{ padding: '8px', border: '1px solid #ddd', textAlign: 'center' }}>{(totalDistance / 1000).toFixed(1)}</td>
+                                <td style={{ padding: '8px', border: '1px solid #ddd', textAlign: 'center' }}>{goalSectionDist.toFixed(1)}</td>
+                                <td style={{ padding: '8px', border: '1px solid #ddd', textAlign: 'center' }}>{getClockTime(totalTimeWithAid)}</td>
+                                <td style={{ padding: '8px', border: '1px solid #ddd', textAlign: 'center' }}>{formatTime(totalTimeWithAid)}</td>
+                                <td style={{ padding: '8px', border: '1px solid #ddd', textAlign: 'center' }}>{goalSectionPace}</td>
+                            </tr>
+                        );
+                    })()}
 
                     {/* Total row */}
                     <tr style={{ background: '#f0f8ff', fontWeight: 'bold' }}>
