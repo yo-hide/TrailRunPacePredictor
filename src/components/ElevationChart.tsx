@@ -167,10 +167,10 @@ export const ElevationChart: React.FC<Props> = ({ data, wayPoints, strategy }) =
                             ticks={paceTicks}
                         />
                         <Tooltip
-                            formatter={(value: number | undefined, name: string) => {
+                            formatter={(value: number | undefined, name: string | undefined) => {
                                 if (name === 'ele') return [Math.round(value || 0) + "m", "標高"];
                                 if (name === 'pace') return [(value || 0).toFixed(1) + " 分/km", "ペース"];
-                                return [value, name];
+                                return [value, name || ''];
                             }}
                             labelFormatter={(label: number) => (label / 1000).toFixed(2) + "km"}
                         />
