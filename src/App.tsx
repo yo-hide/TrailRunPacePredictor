@@ -41,7 +41,7 @@ function App() {
     if (!mainRef.current) return;
 
     try {
-      const canvas = await html2canvas(mainRef.current);
+      const canvas = await html2canvas(mainRef.current, { scale: 2 });
       const dataUrl = canvas.toDataURL("image/png");
       const link = document.createElement('a');
       link.href = dataUrl;
