@@ -70,8 +70,16 @@ function App() {
   return (
     <div style={{ maxWidth: '1000px', margin: '0 auto', padding: '20px', fontFamily: 'sans-serif' }}>
       <header style={{ marginBottom: '30px', textAlign: 'center' }}>
-        <h1>トレイルランニング レースタイム予測</h1>
+        <h1>トレイルランニング レースタイム予測ツール</h1>
         <p>GPXと走力・戦略からレース時間をシミュレーションします</p>
+        <div style={{ marginTop: '10px', fontSize: '0.9em', color: '#555' }}>
+          <p>
+            使い方はこちらを参照 → <a href="https://note.com/yo_hide/n/n71bf131caefc" target="_blank" rel="noopener noreferrer" style={{ color: '#007bff', textDecoration: 'none' }}>note:トレラン レースタイム予測ツール</a>
+          </p>
+          <p>
+            何かありましたらこちらへ → <a href="https://x.com/yo_hide" target="_blank" rel="noopener noreferrer" style={{ color: '#007bff', textDecoration: 'none' }}>X:ひでぴこ</a>
+          </p>
+        </div>
       </header>
 
       <main ref={mainRef} style={{ background: '#fff', padding: '10px' }}>
