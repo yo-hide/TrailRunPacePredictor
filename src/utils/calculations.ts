@@ -78,3 +78,55 @@ export const formatTime = (seconds: number): string => {
     const s = Math.floor(seconds % 60);
     return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
 }
+
+export const calculateAdjustedStrategy = (trackPoints: TrackPoint[], waypoints: any[], totalDistance: number, strategy: Strategy): Strategy => {
+    if (strategy.mode === 'pace') return strategy;
+
+    // Convert target hours and minutes to seconds
+    const targetTotalSeconds = strategy.targetHours * 3600 + strategy.targetMinutes * 60;
+
+    // Calculate total aid time (same logic as ResultTable.tsx)
+    const startThreshold = 100;
+    const goalThreshold = 100;
+    const sortedWpts = [...waypoints].sort((a, b) => a.distanceFromStart - b.distanceFromStart);
+
+    let totalAidCount = sortedWpts.length;
+    if (sortedWpts.length > 0 && sortedWpts[0].distanceFromStart < startThreshold) {
+        totalAidCount--; // exclude start
+    }
+    const isLastAtGoal = sortedWpts.length > 0 &&
+        Math.abs(sortedWpts[sortedWpts.length - 1].distanceFromStart - totalDistance) < goalThreshold;
+    if (isLastAtGoal) {
+        totalAidCount--; // exclude goal
+    }
+    totalAidCount = Math.max(0, totalAidCount);
+    const totalAidTimeSeconds = totalAidCount * strategy.aidStationTime * 60;
+
+    const netTargetSeconds = targetTotalSeconds - totalAidTimeSeconds;
+
+    if (netTargetSeconds <= 0) return strategy; // Avoid negative or zero target
+
+    // User requested ratio: Base : Descent : Climb = 1 : 0.8 : 2
+    const referenceStrategy: Strategy = {
+        ...strategy,
+        basePace: 1.0,
+        climbPace: 2.0,
+        descentPace: 0.8
+    };
+
+    // Calculate total time with reference ratio (basePace = 1.0 min/km)
+    const refTracks = predictTime(trackPoints, referenceStrategy);
+    const totalRefSeconds = refTracks.length > 0 ? (refTracks[refTracks.length - 1].predictedTime || 0) : 0;
+
+    if (totalRefSeconds <= 0) return strategy;
+
+    // Ratio to scale reference paces to reach net target time
+    const ratio = netTargetSeconds / totalRefSeconds;
+
+    return {
+        ...strategy,
+        basePace: 1.0 * ratio,
+        climbPace: 2.0 * ratio,
+        descentPace: 0.8 * ratio,
+    }
+}

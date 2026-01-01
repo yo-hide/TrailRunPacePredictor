@@ -17,7 +17,12 @@ export interface WayPoint {
     predictedTime?: number; // seconds from start
 }
 
+export type CalculationMode = 'pace' | 'targetTime';
+
 export interface Strategy {
+    mode: CalculationMode;
+    targetHours: number;
+    targetMinutes: number;
     basePace: number; // min/km (flat)
     climbThreshold: number; // gradient % to switch to walk
     climbPace: number; // min/km (walking uphill)

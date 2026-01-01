@@ -163,7 +163,10 @@ export const ResultsTable: React.FC<Props> = ({ wayPoints, totalDistance, totalT
                     </tr>
                 </tbody>
             </table>
-            <p style={{ fontSize: '0.9em', color: '#666' }}>※エイド滞在時間({strategy.aidStationTime}分)は次の区間の所要時間に加算されます。スタート地点およびゴール地点のエイドでは滞在時間を加算しません。区間ペースはエイド滞在時間を除いた走行時間から計算しています。</p>
+            <div style={{ fontSize: '0.9em', color: '#666', marginTop: '10px' }}>
+                <p style={{ margin: '2px 0' }}>※エイド滞在時間({strategy.aidStationTime}分)は次の区間の所要時間に加算されます。スタート地点およびゴール地点のエイドでは滞在時間を加算しません。</p>
+                <p style={{ margin: '2px 0', fontWeight: 'bold', color: '#d9534f' }}>※各エイドの関門時間は考慮していません。自身の責任において確認をお願いします。</p>
+            </div>
         </div>
     );
 };

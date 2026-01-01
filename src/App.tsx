@@ -4,12 +4,15 @@ import { StrategyForm } from './components/StrategyForm';
 import { ResultsTable } from './components/ResultTable';
 import { ElevationChart } from './components/ElevationChart';
 import { parseGPX } from './utils/gpxParser';
-import { predictTime, updateWaypoints } from './utils/calculations';
+import { predictTime, updateWaypoints, calculateAdjustedStrategy } from './utils/calculations';
 import type { Strategy, CourseData } from './types';
 import html2canvas from 'html2canvas'; // Import html2canvas
 import './App.css';
 
 const DEFAULT_STRATEGY: Strategy = {
+  mode: 'pace',
+  targetHours: 10,
+  targetMinutes: 0,
   basePace: 9.0, // 9 min/km
   climbThreshold: 10, // 10%
   climbPace: 18.0, // 18 min/km (walking)
@@ -55,7 +58,14 @@ function App() {
   };
 
   const resultData = courseData ? (() => {
-    const predictedTracks = predictTime(courseData.trackPoints, strategy);
+    const adjustedStrategy = calculateAdjustedStrategy(
+      courseData.trackPoints,
+      courseData.wayPoints,
+      courseData.totalDistance,
+      strategy
+    );
+
+    const predictedTracks = predictTime(courseData.trackPoints, adjustedStrategy);
     const predictedWaypoints = updateWaypoints(courseData.wayPoints, predictedTracks);
     const lastPt = predictedTracks[predictedTracks.length - 1];
     const totalRunTime = lastPt ? (lastPt.predictedTime || 0) : 0;
@@ -63,7 +73,8 @@ function App() {
     return {
       tracks: predictedTracks,
       waypoints: predictedWaypoints,
-      totalTime: totalRunTime
+      totalTime: totalRunTime,
+      finalStrategy: adjustedStrategy
     };
   })() : null;
 
@@ -108,16 +119,20 @@ function App() {
               </div>
             </div>
 
-            <StrategyForm strategy={strategy} onChange={handleStrategyChange} />
+            <StrategyForm
+              strategy={strategy}
+              displayStrategy={resultData?.finalStrategy || strategy}
+              onChange={handleStrategyChange}
+            />
 
             {resultData && (
               <>
-                <ElevationChart data={resultData.tracks} wayPoints={resultData.waypoints} strategy={strategy} />
+                <ElevationChart data={resultData.tracks} wayPoints={resultData.waypoints} strategy={resultData.finalStrategy} />
                 <ResultsTable
                   wayPoints={resultData.waypoints}
                   totalDistance={courseData.totalDistance}
                   totalTime={resultData.totalTime}
-                  strategy={strategy}
+                  strategy={resultData.finalStrategy}
                 />
               </>
             )}
