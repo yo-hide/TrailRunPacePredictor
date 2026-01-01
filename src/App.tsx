@@ -90,6 +90,9 @@ function App() {
           <p>
             何かありましたらこちらへ → <a href="https://x.com/yo_hide" target="_blank" rel="noopener noreferrer" style={{ color: '#007bff', textDecoration: 'none' }}>X:ひでぴこ</a>
           </p>
+          <p>
+            元祖区間タイム計測ツールはこちら → <a href="https://trailflow.jp" target="_blank" rel="noopener noreferrer" style={{ color: '#007bff', textDecoration: 'none' }}>TrailFlow</a>
+          </p>
         </div>
       </header>
 
