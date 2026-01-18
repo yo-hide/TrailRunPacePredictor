@@ -88,7 +88,7 @@ function App() {
             使い方はこちらを参照 → <a href="https://note.com/yo_hide/n/n71bf131caefc" target="_blank" rel="noopener noreferrer" style={{ color: '#007bff', textDecoration: 'none' }}>note:トレラン レースタイム予測ツール</a>
           </p>
           <p>
-            何かありましたらこちらへ → <a href="https://x.com/yo_hide" target="_blank" rel="noopener noreferrer" style={{ color: '#007bff', textDecoration: 'none' }}>X:ひでぴこ</a>
+            本ツールのお問い合わせはこちらへ → <a href="https://x.com/yo_hide" target="_blank" rel="noopener noreferrer" style={{ color: '#007bff', textDecoration: 'none' }}>X:ひでぴこ</a>
           </p>
           <p>
             元祖区間タイム計測ツールはこちら → <a href="https://trailflow.jp" target="_blank" rel="noopener noreferrer" style={{ color: '#007bff', textDecoration: 'none' }}>TrailFlow</a>
