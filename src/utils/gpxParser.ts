@@ -11,6 +11,12 @@ export const parseGPX = (gpxText: string): CourseData => {
     let eleGain = 0;
     let eleLoss = 0;
 
+    // ヒステリシス計算用の基準標高
+    let currentBaseEle = 0;
+    if (trkpts.length > 0) {
+        currentBaseEle = parseFloat(trkpts[0].getElementsByTagName("ele")[0]?.textContent || "0");
+    }
+
     // Track Points
     for (let i = 0; i < trkpts.length; i++) {
         const pt = trkpts[i];
@@ -26,10 +32,16 @@ export const parseGPX = (gpxText: string): CourseData => {
             dist = getDistance({ lat: prev.lat, lon: prev.lon }, { lat, lon });
             totalDist += dist;
 
-            const eleDiff = ele - prev.ele;
-            if (eleDiff > 0) eleGain += eleDiff;
-            if (eleDiff < 0) eleLoss += Math.abs(eleDiff);
+            // ヒステリシス法を用いた累積標高の計算 (閾値 3m)
+            const diffFromBase = ele - currentBaseEle;
+            if (Math.abs(diffFromBase) >= 3.0) {
+                if (diffFromBase > 0) eleGain += diffFromBase;
+                if (diffFromBase < 0) eleLoss += Math.abs(diffFromBase);
+                currentBaseEle = ele;
+            }
 
+            // 勾配計算は局所的な変化を反映させるため、隣接点間の差分を使用
+            const eleDiff = ele - prev.ele;
             if (dist > 0) {
                 gradient = (eleDiff / dist) * 100;
             }
