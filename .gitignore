@@ -22,3 +22,8 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Local work files（ローカル作業用ファイル）
+.agent/
+ENGINEERING_SUMMARY.md
+sloc*.txt
